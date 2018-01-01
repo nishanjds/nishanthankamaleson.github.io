@@ -1,0 +1,60 @@
+---
+title: "Street-level Crimes in West Midlands, UK"
+date: "01/01/2018"
+output: 
+    html_document:
+        keep_md: true
+---
+
+## Background
+The [dataset][1] shows the locations of street-level crimes within **West Midlands, UK** during **November, 2017**. 
+
+```{r prestep, include=FALSE}
+library(data.table)
+library(dplyr)
+library(knitr)
+library(leaflet)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.path = 'figure/')
+```
+
+## Reading the dataset
+```{r step-01, message=FALSE}
+# Select the required columns to point out the places where crime happened
+df <- fread('west-midlands.csv', select = c('Longitude', 'Latitude', 'Crime type'))
+# Fix column names
+colnames(df) <- c('longitude', 'latitude', 'crimeType') 
+# Convert the crimeType into a factor
+df$crimeType <- as.factor(df$crimeType)    
+# Select sample from the actual data
+df <- sample_n(df, size = 2000)
+```
+
+## Showing the street-crime locations on the map
+```{r step-02, message=FALSE}
+# Choose a colour pallete with respect to crime type
+pal <- colorFactor("Spectral", df$crimeType)
+# Create the map (p.s. code printing the map is hidden)
+map <- df %>%
+       leaflet() %>% 
+       addTiles() %>%
+       setView(lng = median(df$longitude), lat = median(df$latitude), zoom = 11) %>%
+       addCircleMarkers(
+            fillColor = ~pal(crimeType),
+            clusterOptions = markerClusterOptions(),
+            popup = df$crimeType,
+            fill = TRUE,
+            stroke = FALSE, 
+            opacity = 1,
+            fillOpacity = 1) %>%
+        addLegend(position = 'bottomleft', 
+                  pal = pal, 
+                  values = df$crimeType, 
+                  opacity = 0.7) 
+```
+```{r step-03, echo=FALSE}
+map
+```
+
+
+
+[1]: https://data.police.uk/data/fetch/ab004832-090a-44b7-80ef-7ad04978015c/
